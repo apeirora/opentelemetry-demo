@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 version = 1
 SPDX-PackageName = "Apeiro OpenTelemetry Demo"
 SPDX-PackageSupplier = "ospo@sap.com"
@@ -7,7 +9,21 @@ SPDX-PackageComment = "The code in this project may include calls to APIs (\"API
 [[annotations]]
 path = "**"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 SAP SE or an SAP affiliate company and OpenTelemetry contributors"
+SPDX-FileCopyrightText = "2026 SAP SE or an SAP affiliate company and The OpenTelemetry Authors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [
+  ".licenserc.json",
+  "src/telemetry-docs/templates/markdown/attribute_macros.j2",
+  "src/telemetry-docs/templates/markdown/mkdocs_nav.yml.j2",
+  "src/telemetry-docs/templates/markdown/readme.md.j2",
+  "src/telemetry-docs/templates/markdown/registry.md.j2",
+  "src/telemetry-docs/templates/markdown/service.md.j2",
+  "src/telemetry-docs/templates/markdown/stability.j2",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 SAP SE or an SAP affiliate company and The OpenTelemetry Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]

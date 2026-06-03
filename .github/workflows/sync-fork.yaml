@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 name: sync-fork
 on:
   schedule:

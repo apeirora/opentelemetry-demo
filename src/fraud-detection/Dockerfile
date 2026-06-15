@@ -9,7 +9,10 @@ WORKDIR /usr/src/app/
 COPY ./src/fraud-detection/ ./
 COPY ./pb/ ./src/main/proto/
 
-RUN gradle shadowJar
+RUN --mount=type=secret,id=github_token \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token) \
+    GITHUB_ACTOR=github-actions \
+    gradle shadowJar
 
 # -----------------------------------------------------------------------------
 

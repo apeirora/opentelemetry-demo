@@ -9,13 +9,18 @@ COPY ./src/ad/gradlew* ./src/ad/settings.gradle* ./src/ad/build.gradle ./
 COPY ./src/ad/gradle ./gradle
 
 RUN chmod +x ./gradlew
-RUN ./gradlew
-RUN ./gradlew downloadRepos
+RUN --mount=type=secret,id=github_token \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token) \
+    GITHUB_ACTOR=github-actions \
+    ./gradlew downloadRepos
 
 COPY ./src/ad/ ./
 COPY ./pb/ ./proto
 RUN chmod +x ./gradlew
-RUN ./gradlew installDist -PprotoSourceDir=./proto
+RUN --mount=type=secret,id=github_token \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token) \
+    GITHUB_ACTOR=github-actions \
+    ./gradlew installDist -PprotoSourceDir=./proto
 
 # -----------------------------------------------------------------------------
 

@@ -13,8 +13,11 @@ import io.grpc.protobuf.services.*;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.audit.ActorType;
+import io.opentelemetry.api.audit.AuditDeliveryException;
 import io.opentelemetry.api.audit.AuditLogger;
 import io.opentelemetry.api.audit.GlobalAuditProvider;
+import io.opentelemetry.api.audit.Outcome;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -50,12 +53,6 @@ import dev.openfeature.sdk.Client;
 import dev.openfeature.sdk.EvaluationContext;
 import dev.openfeature.sdk.MutableContext;
 import dev.openfeature.sdk.OpenFeatureAPI;
-
-import audit.log.Actor;
-import audit.log.AuditEvent;
-import audit.log.AuditException;
-import audit.log.Outcome;
-import audit.log.Target;
 
 public final class AdService {
 
@@ -258,6 +255,25 @@ public final class AdService {
         }
 
         AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
+        String actorId = (enduserId != null) ? enduserId
+                       : (sessionId != null) ? sessionId
+                       : "unknown";
+        String targetId = req.getContextKeysCount() > 0
+            ? req.getContextKeysList().toString()
+            : "random";
+        try {
+          auditLogger
+              .auditRecordBuilder()
+              .setTimestamp(System.currentTimeMillis(), java.util.concurrent.TimeUnit.MILLISECONDS)
+              .setEventName("ad.served")
+              .setActor(actorId, ActorType.USER)
+              .setAction("READ")
+              .setOutcome(Outcome.SUCCESS)
+              .setTarget(targetId, "ad.category")
+              .emit();
+        } catch (AuditDeliveryException e) {
+          logger.warn("Audit delivery failed for ad.served event", e);
+        }
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
       } catch (StatusRuntimeException e) {

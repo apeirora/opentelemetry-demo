@@ -259,12 +259,12 @@ public final class AdService {
                        : (sessionId != null) ? sessionId
                        : "unknown";
         String targetId = req.getContextKeysCount() > 0
-            ? req.getContextKeysList().toString()
+            ? String.join(",", req.getContextKeysList())
             : "random";
         try {
           auditLogger
               .auditRecordBuilder()
-              .setTimestamp(System.currentTimeMillis(), java.util.concurrent.TimeUnit.MILLISECONDS)
+              .setTimestamp(java.time.Instant.now())
               .setEventName("ad.served")
               .setActor(actorId, ActorType.USER)
               .setAction("READ")
@@ -273,6 +273,8 @@ public final class AdService {
               .emit();
         } catch (AuditDeliveryException e) {
           logger.warn("Audit delivery failed for ad.served event", e);
+        } catch (RuntimeException e) {
+          logger.warn("Unexpected error during audit emission for ad.served event", e);
         }
         responseObserver.onNext(reply);
         responseObserver.onCompleted();

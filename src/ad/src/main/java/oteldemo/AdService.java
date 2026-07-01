@@ -49,6 +49,13 @@ import dev.openfeature.sdk.MutableContext;
 import dev.openfeature.sdk.OpenFeatureAPI;
 import java.util.UUID;
 
+import audit.log.Actor;
+import audit.log.AuditEvent;
+import audit.log.AuditException;
+import audit.log.Outcome;
+import audit.log.Target;
+import io.opentelemetry.api.audit.AuditLogger;
+import io.opentelemetry.api.audit.GlobalAuditProvider;
 
 public final class AdService {
 
@@ -82,6 +89,9 @@ public final class AdService {
   private static final AdService service = new AdService();
   private static final Tracer tracer = GlobalOpenTelemetry.getTracer("ad");
   private static final Meter meter = GlobalOpenTelemetry.getMeter("ad");
+
+  private static final AuditLogger auditLogger =
+      GlobalAuditProvider.get().auditLoggerBuilder("ad").build();
 
   private static final LongCounter adRequestsCounter =
       meter

@@ -19,6 +19,14 @@ repositories {
             password = System.getenv("GITHUB_TOKEN") ?: (findProperty("gpr.key") ?: "")
         }
     }
+    maven {
+        name = "githubPackagesAuditAPI"
+        url = uri("https://maven.pkg.github.com/apeirora/AuditAPI")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: (findProperty("gpr.user") ?: "")
+            password = System.getenv("GITHUB_TOKEN") ?: (findProperty("gpr.key") ?: "")
+        }
+    }
     mavenCentral()
     mavenLocal()
 }
@@ -51,6 +59,8 @@ dependencies {
     } else {
         implementation platform("eu.apeirora.opentelemetry:opentelemetry-bom:${opentelemetryVersion}")
         implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${opentelemetryInstrumentationVersion}")
+
+        implementation "eu.apeirora:audit.log:0.0.1-SNAPSHOT"
 
         implementation "com.google.api.grpc:proto-google-common-protos:2.72.0",
                 "com.google.protobuf:protobuf-java:${protocVersion}",

@@ -24,12 +24,21 @@ version = "1.0"
 val grpcVersion = "1.81.0"
 val protobufVersion = "4.35.0"
 val opentelemetryVersion = "1.64.0-SNAPSHOT"
+val apeiroraAuditLogVersion = "0.0.1-SNAPSHOT"
 
 
 repositories {
     maven {
         name = "githubPackages"
         url = uri("https://maven.pkg.github.com/apeirora/opentelemetry-java")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: (findProperty("gpr.user") as String? ?: "")
+            password = System.getenv("GITHUB_TOKEN") ?: (findProperty("gpr.key") as String? ?: "")
+        }
+    }
+    maven {
+        name = "githubPackagesAuditAPI"
+        url = uri("https://maven.pkg.github.com/apeirora/AuditAPI")
         credentials {
             username = System.getenv("GITHUB_ACTOR") ?: (findProperty("gpr.user") as String? ?: "")
             password = System.getenv("GITHUB_TOKEN") ?: (findProperty("gpr.key") as String? ?: "")
@@ -43,6 +52,7 @@ repositories {
 
 dependencies {
     implementation(platform("eu.apeirora.opentelemetry:opentelemetry-bom:${opentelemetryVersion}"))
+    implementation("eu.apeirora:audit.log:${apeiroraAuditLogVersion}")
     implementation("com.google.protobuf:protobuf-java:${protobufVersion}")
     testImplementation(kotlin("test"))
     implementation(kotlin("script-runtime"))

@@ -188,12 +188,14 @@ public final class AdService {
 
         Baggage baggage = Baggage.fromContextOrNull(Context.current());
         MutableContext evaluationContext = new MutableContext();
+        String sessionId = null;
+        String enduserId = null;
         if (baggage != null) {
-          final String sessionId = baggage.getEntryValue("session.id");
+          sessionId = baggage.getEntryValue("session.id");
           span.setAttribute("session.id", sessionId);
           evaluationContext.setTargetingKey(sessionId);
           evaluationContext.add("session", sessionId);
-          final String enduserId = baggage.getEntryValue("enduser.id");
+          enduserId = baggage.getEntryValue("enduser.id");
           if (enduserId != null) {
             span.setAttribute("enduser.id", enduserId);
           }

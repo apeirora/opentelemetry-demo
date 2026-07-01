@@ -13,6 +13,8 @@ import io.grpc.protobuf.services.*;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.audit.AuditLogger;
+import io.opentelemetry.api.audit.GlobalAuditProvider;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -33,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,15 +50,12 @@ import dev.openfeature.sdk.Client;
 import dev.openfeature.sdk.EvaluationContext;
 import dev.openfeature.sdk.MutableContext;
 import dev.openfeature.sdk.OpenFeatureAPI;
-import java.util.UUID;
 
 import audit.log.Actor;
 import audit.log.AuditEvent;
 import audit.log.AuditException;
 import audit.log.Outcome;
 import audit.log.Target;
-import io.opentelemetry.api.audit.AuditLogger;
-import io.opentelemetry.api.audit.GlobalAuditProvider;
 
 public final class AdService {
 

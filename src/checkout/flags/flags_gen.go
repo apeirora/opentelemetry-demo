@@ -69,3 +69,22 @@ var PaymentUnreachable = struct {
 		return client.BooleanValueDetails(ctx, "paymentUnreachable", false, evalCtx)
 	},
 }
+
+// AuditLogging returns the value of the "auditLogging" feature flag.
+// enable checkout audit logging
+//
+// The flag is a type of boolean and defaults to false.
+var AuditLogging = struct {
+	fmt.Stringer
+	Value evaluationValue[bool]
+
+	ValueWithDetails evaluationDetails[bool]
+}{
+	Stringer: stringer("auditLogging"),
+	Value: func(ctx context.Context, evalCtx openfeature.EvaluationContext) bool {
+		return client.Boolean(ctx, "auditLogging", false, evalCtx)
+	},
+	ValueWithDetails: func(ctx context.Context, evalCtx openfeature.EvaluationContext) (openfeature.GenericEvaluationDetails[bool], error) {
+		return client.BooleanValueDetails(ctx, "auditLogging", false, evalCtx)
+	},
+}

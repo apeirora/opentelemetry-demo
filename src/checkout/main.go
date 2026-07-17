@@ -188,6 +188,12 @@ func main() {
 	logger = otelslog.NewLogger("checkout")
 	slog.SetDefault(logger)
 
+	if err := initAuditFromEnv(); err != nil {
+		logger.Error("failed to initialize audit logging", slog.Any("error", err))
+		os.Exit(1)
+	}
+	defer shutdownAudit(context.Background())
+
 	err := runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
 	if err != nil {
 		logger.Error((err.Error()))
@@ -319,6 +325,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	defer func() {
 		if err != nil {
 			span.RecordError(err)
+			emitCheckoutAudit(ctx, "order.failed", "PLACE_ORDER", req.UserId, "", "failure", map[string]any{
+				"error": err.Error(),
+			})
 		}
 	}()
 
@@ -356,6 +365,10 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		slog.LevelInfo, "payment went through",
 		slog.String("transaction_id", txID),
 	)
+	emitCheckoutAudit(ctx, "payment.charged", "CHARGE", req.UserId, txID, "success", map[string]any{
+		"transaction_id": txID,
+		"currency":       req.UserCurrency,
+	})
 
 	shippingTrackingID, err := cs.shipOrder(ctx, req.Address, prep.cartItems)
 	if err != nil {
@@ -393,6 +406,14 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		slog.Int("demo.order.items.count", len(prep.orderItems)),
 		slog.String("demo.shipping.tracking.id", shippingTrackingID),
 	)
+	emitCheckoutAudit(ctx, "order.placed", "PLACE_ORDER", req.UserId, orderID.String(), "success", map[string]any{
+		"order_id":            orderID.String(),
+		"shipping_tracking_id": shippingTrackingID,
+		"order_amount":        totalPriceFloat,
+		"shipping_amount":     shippingCostFloat,
+		"item_count":          len(prep.orderItems),
+		"currency":            req.UserCurrency,
+	})
 
 	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {
 		logger.Warn(fmt.Sprintf("failed to send order confirmation: %+v", err))

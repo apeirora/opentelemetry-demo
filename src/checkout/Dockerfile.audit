@@ -1,0 +1,43 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Builds checkout with the local opentelemetry-go auditlog SDK.
+# Build context must be the parent OTEL directory (../ from opentelemetry-demo).
+#
+#   docker build -f opentelemetry-demo/src/checkout/Dockerfile.audit -t checkout-audit ..
+
+FROM docker.io/library/golang:1.26.4-bookworm@sha256:b305420a68d0f229d91eb3b3ed9e519fcf2cf5461da4bef997bf927e8c0bfd2b AS builder
+
+WORKDIR /build/opentelemetry-demo/src/checkout
+
+COPY opentelemetry-go/ /build/opentelemetry-go/
+COPY opentelemetry-demo/src/checkout/audit.go.mod go.mod
+COPY opentelemetry-demo/src/checkout/audit.go.sum go.sum
+
+RUN go mod download
+
+COPY opentelemetry-demo/src/checkout/genproto/oteldemo/ genproto/oteldemo/
+COPY opentelemetry-demo/src/checkout/flags/ flags/
+COPY opentelemetry-demo/src/checkout/kafka/ kafka/
+COPY opentelemetry-demo/src/checkout/money/ money/
+COPY opentelemetry-demo/src/checkout/main.go main.go
+COPY opentelemetry-demo/src/checkout/audit.go audit.go
+COPY opentelemetry-demo/src/auditlog/keys/dev_hmac_key.txt /etc/auditlog/dev_hmac_key.txt
+RUN chmod 444 /etc/auditlog/dev_hmac_key.txt
+
+RUN CGO_ENABLED=0 GOOS=linux go build -tags audit -ldflags "-s -w" -o checkout .
+
+FROM ghcr.io/grpc-ecosystem/grpc-health-probe:v0.4.52@sha256:0303b506a288d544ed99fef17a55c8c5ce872f498f643c396b532b3595089ac9 AS grpc-health-probe
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:d093aa3e30dbadd3efe1310db061a14da60299baff8450a17fe0ccc514a16639
+
+WORKDIR /usr/src/app/
+
+COPY --from=builder /build/opentelemetry-demo/src/checkout/checkout ./
+COPY --from=builder /etc/auditlog/dev_hmac_key.txt /etc/auditlog/dev_hmac_key.txt
+COPY --from=grpc-health-probe /ko-app/grpc-health-probe /bin/grpc_health_probe
+
+ENV OTEL_AUDITLOG_HMAC_KEY_FILE=/etc/auditlog/dev_hmac_key.txt
+
+EXPOSE ${CHECKOUT_PORT}
+ENTRYPOINT [ "./checkout" ]

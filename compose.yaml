@@ -39,6 +39,8 @@ services:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-ad
       args:
         OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
+      secrets:
+        - github_token
     deploy:
       resources:
         limits:
@@ -840,3 +842,7 @@ services:
       - POSTGRES_PORT
       - POSTGRES_MONITORING_PASSWORD
       - GOMEMLIMIT=160MiB
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

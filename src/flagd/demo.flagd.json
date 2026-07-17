@@ -151,6 +151,15 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "auditLogging": {
+      "description": "Emit checkout audit logs to the audit collector",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

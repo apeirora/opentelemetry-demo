@@ -1,0 +1,43 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Audit log pipeline: auditlogreceiver -> certificatelogverify -> debug.
+# Loaded with compose.audit.yaml (requires otelcontribcol-auditlog collector image).
+
+extensions:
+  redis_storage/wal:
+    endpoint: audit-redis:6379
+    db: 0
+    tls:
+      insecure: true
+
+receivers:
+  auditlogreceiver:
+    endpoint: 0.0.0.0:4319
+    path: /v1/audit
+    response_mode: sync
+    storage: redis_storage/wal
+    circuit_breaker:
+      enabled: true
+      open_behavior: reject
+
+processors:
+  certificatelogverify:
+    mode: sync
+    failure_mode: strict
+    verification_profile: default
+    hmac_key_file: /etc/auditlog/keys/dev_hmac_key.txt
+
+exporters:
+  debug/audit:
+    verbosity: detailed
+    sending_queue:
+      enabled: false
+
+service:
+  extensions: [redis_storage/wal]
+  pipelines:
+    logs/audit:
+      receivers: [auditlogreceiver]
+      processors: [certificatelogverify]
+      exporters: [debug/audit]

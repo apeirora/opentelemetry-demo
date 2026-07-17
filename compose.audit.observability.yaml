@@ -1,0 +1,8 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Audit + observability: use with compose.yaml, compose.observability.yaml, and compose.audit.yaml.
+# Audit ingestion runs on otel-collector-audit (see compose.audit.yaml); the main otel-collector
+# receives verified audit logs via OTLP HTTP and exports them with Jaeger/Prometheus/OpenSearch.
+
+services: {}

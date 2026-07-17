@@ -52,6 +52,8 @@ services:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-fraud-detection
       args:
         OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
+      secrets:
+        - github_token
     deploy:
       resources:
         limits:

@@ -1,0 +1,73 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Audit logging layer: Redis WAL, otelauditcol (auditlogreceiver), checkout audit SDK.
+#
+# Prerequisites (sibling repo under ../):
+#   - opentelemetry-go (audit SDK branch)
+#
+# Toggle audit emission at runtime via the auditLogging feature flag (flagd / http://localhost:8080/feature/).
+#
+# Usage:
+#   .\scripts\run-audit-demo.ps1
+#   docker compose -f compose.yaml -f compose.audit.yaml up --build
+#
+# With observability UIs:
+#   docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml up --build
+
+services:
+  audit-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  otel-collector-audit:
+    image: ${OTEL_AUDIT_COLLECTOR_IMAGE}
+    pull_policy: always
+    restart: unless-stopped
+    command:
+      - --config=/etc/otelcol-config-audit-collector.yml
+    volumes:
+      - ./src/otel-collector/otelcol-config-audit-collector.yml:/etc/otelcol-config-audit-collector.yml:ro
+      - ./src/auditlog/keys:/etc/auditlog/keys:ro
+    ports:
+      - "${OTEL_AUDITLOG_PORT:-4319}:4319"
+    depends_on:
+      audit-redis:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  checkout:
+    image: otel-demo-checkout-audit:local
+    pull_policy: build
+    build:
+      context: ../
+      dockerfile: opentelemetry-demo/src/checkout/Dockerfile.audit
+    environment:
+      - OTEL_AUDITLOG_ENDPOINT=http://otel-collector-audit:4319/v1/audit
+      - OTEL_AUDITLOG_HMAC_KEY=testapp-dev-hmac-key-change-in-production
+    depends_on:
+      otel-collector-audit:
+        condition: service_started
+      audit-redis:
+        condition: service_started
+
+  frontend-proxy:
+    environment:
+      - OPAMP_SERVER_HOST=127.0.0.1
+      - OPAMP_SERVER_UI_PORT=4320
+    depends_on:
+      otel-collector:
+        condition: service_started

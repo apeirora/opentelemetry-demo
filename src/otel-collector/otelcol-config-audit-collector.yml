@@ -1,0 +1,54 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Standalone audit collector (otelauditcol): auditlogreceiver -> certificatelogverify -> otlphttp.
+# Verified audit logs are forwarded to the main otel-collector logs pipeline (debug exporter).
+
+extensions:
+  redis_storage/wal:
+    endpoint: audit-redis:6379
+    db: 0
+    tls:
+      insecure: true
+
+receivers:
+  auditlogreceiver:
+    endpoint: 0.0.0.0:4319
+    path: /v1/audit
+    response_mode: sync
+    storage: redis_storage/wal
+    circuit_breaker:
+      enabled: true
+      open_behavior: reject
+
+processors:
+  certificatelogverify:
+    mode: sync
+    failure_mode: strict
+    verification_profile: default
+    hmac_key_file: /etc/auditlog/keys/dev_hmac_key.txt
+
+exporters:
+  otlp_http:
+    endpoint: http://otel-collector:4318
+    timeout: 8s
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: true
+      initial_interval: 500ms
+      max_interval: 2s
+      max_elapsed_time: 8s
+    tls:
+      insecure: true
+
+service:
+  telemetry:
+    logs:
+      level: info
+  extensions: [redis_storage/wal]
+  pipelines:
+    logs/audit:
+      receivers: [auditlogreceiver]
+      processors: [certificatelogverify]
+      exporters: [otlp_http]

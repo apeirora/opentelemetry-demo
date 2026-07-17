@@ -3,8 +3,8 @@
 #
 # Audit logging layer: Redis WAL, otelauditcol (auditlogreceiver), checkout audit SDK.
 #
-# Prerequisites (sibling repo under ../):
-#   - opentelemetry-go (audit SDK branch)
+# Images are pulled from GitHub Container Registry (see .env). To rebuild checkout locally:
+#   docker compose -f compose.yaml -f compose.audit.yaml build checkout
 #
 # Toggle audit emission at runtime via the auditLogging feature flag (flagd / http://localhost:8080/feature/).
 #
@@ -50,11 +50,11 @@ services:
         max-file: "2"
 
   checkout:
-    image: otel-demo-checkout-audit:local
-    pull_policy: build
+    image: ${CHECKOUT_AUDIT_IMAGE}
+    pull_policy: always
     build:
-      context: ../
-      dockerfile: opentelemetry-demo/src/checkout/Dockerfile.audit
+      context: ./
+      dockerfile: ./src/checkout/Dockerfile.audit
     environment:
       - OTEL_AUDITLOG_ENDPOINT=http://otel-collector-audit:4319/v1/audit
       - OTEL_AUDITLOG_HMAC_KEY=testapp-dev-hmac-key-change-in-production

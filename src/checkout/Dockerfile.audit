@@ -7,7 +7,7 @@
 
 FROM docker.io/library/golang:1.26.4-bookworm@sha256:b305420a68d0f229d91eb3b3ed9e519fcf2cf5461da4bef997bf927e8c0bfd2b AS builder
 
-ARG OTEL_GO_REPO=https://github.com/apeirora/opentelemetry-go.git
+ARG OTEL_GO_REPO=https://github.com/apeirora/opentelemetry-go
 ARG OTEL_GO_REF=AuditLog
 
 WORKDIR /build

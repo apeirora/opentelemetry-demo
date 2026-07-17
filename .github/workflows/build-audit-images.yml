@@ -1,0 +1,51 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Build audit images
+
+on:
+  push:
+    branches:
+      - feat/audit-logging-demo
+      - main
+    paths:
+      - src/checkout/**
+      - src/auditlog/**
+      - .github/workflows/build-audit-images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  checkout-audit:
+    name: Build and push checkout-audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout demo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318fb6c76b3839c429ac7431a05e880ea  # v3.10.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@9780b0c442871aee9c3a6a5753ecefe69b2b05d2  # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push checkout-audit
+        uses: docker/build-push-action@263435318d21a0faa88a26f0217f3b6b7d2aafb  # v6.18.0
+        with:
+          context: .
+          file: ./src/checkout/Dockerfile.audit
+          push: true
+          tags: |
+            ghcr.io/apeirora/opentelemetry-demo/checkout-audit:sha-${{ github.sha }}
+            ghcr.io/apeirora/opentelemetry-demo/checkout-audit:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

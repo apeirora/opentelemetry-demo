@@ -1,28 +1,35 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 #
-# Builds checkout with the local opentelemetry-go auditlog SDK.
-# Build context must be the parent OTEL directory (../ from opentelemetry-demo).
+# Builds checkout with the auditlog SDK from GitHub (no sibling repo required).
 #
-#   docker build -f opentelemetry-demo/src/checkout/Dockerfile.audit -t checkout-audit ..
+#   docker build -f src/checkout/Dockerfile.audit -t checkout-audit .
 
 FROM docker.io/library/golang:1.26.4-bookworm@sha256:b305420a68d0f229d91eb3b3ed9e519fcf2cf5461da4bef997bf927e8c0bfd2b AS builder
 
+ARG OTEL_GO_REPO=https://github.com/apeirora/opentelemetry-go.git
+ARG OTEL_GO_REF=AuditLog
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone --depth 1 --branch "${OTEL_GO_REF}" "${OTEL_GO_REPO}" opentelemetry-go
+
 WORKDIR /build/opentelemetry-demo/src/checkout
 
-COPY opentelemetry-go/ /build/opentelemetry-go/
-COPY opentelemetry-demo/src/checkout/audit.go.mod go.mod
-COPY opentelemetry-demo/src/checkout/audit.go.sum go.sum
+COPY src/checkout/audit.go.mod go.mod
+COPY src/checkout/audit.go.sum go.sum
 
 RUN go mod download
 
-COPY opentelemetry-demo/src/checkout/genproto/oteldemo/ genproto/oteldemo/
-COPY opentelemetry-demo/src/checkout/flags/ flags/
-COPY opentelemetry-demo/src/checkout/kafka/ kafka/
-COPY opentelemetry-demo/src/checkout/money/ money/
-COPY opentelemetry-demo/src/checkout/main.go main.go
-COPY opentelemetry-demo/src/checkout/audit.go audit.go
-COPY opentelemetry-demo/src/auditlog/keys/dev_hmac_key.txt /etc/auditlog/dev_hmac_key.txt
+COPY src/checkout/genproto/oteldemo/ genproto/oteldemo/
+COPY src/checkout/flags/ flags/
+COPY src/checkout/kafka/ kafka/
+COPY src/checkout/money/ money/
+COPY src/checkout/main.go main.go
+COPY src/checkout/audit.go audit.go
+COPY src/auditlog/keys/dev_hmac_key.txt /etc/auditlog/dev_hmac_key.txt
 RUN chmod 444 /etc/auditlog/dev_hmac_key.txt
 
 RUN CGO_ENABLED=0 GOOS=linux go build -tags audit -ldflags "-s -w" -o checkout .

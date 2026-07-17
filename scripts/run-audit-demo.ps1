@@ -4,54 +4,44 @@
 $ErrorActionPreference = "Stop"
 
 $DemoRoot = Split-Path -Parent $PSScriptRoot
-$OtelRoot = Split-Path -Parent $DemoRoot
 Set-Location $DemoRoot
 
 $ComposeFiles = @("-f", "compose.yaml", "-f", "compose.audit.yaml")
 
-function Test-Prerequisite {
-    param([string]$Path, [string]$Label)
-    if (-not (Test-Path $Path)) {
-        Write-Host "ERROR: Missing $Label at $Path" -ForegroundColor Red
+Write-Host "Pulling otelauditcol from GitHub Container Registry..."
+docker compose @ComposeFiles pull otel-collector-audit
+
+Write-Host "Pulling checkout-audit from GitHub Container Registry..."
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+docker compose @ComposeFiles pull checkout 2>&1 | ForEach-Object { Write-Host $_ }
+$checkoutPullOk = $LASTEXITCODE -eq 0
+$ErrorActionPreference = $prevEAP
+if (-not $checkoutPullOk) {
+    Write-Host "checkout-audit not available on GHCR yet - building locally..." -ForegroundColor Yellow
+    docker compose @ComposeFiles build checkout
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Failed to build checkout-audit" -ForegroundColor Red
         exit 1
     }
 }
 
-Test-Prerequisite (Join-Path $OtelRoot "opentelemetry-go") "opentelemetry-go"
+Write-Host "Pulling remaining demo images..."
+docker compose @ComposeFiles pull --ignore-buildable
 
-if (-not $env:GITHUB_TOKEN) {
-    try {
-        $env:GITHUB_TOKEN = (gh auth token 2>$null).Trim()
-    } catch {
-        # gh not installed or not logged in
-    }
-}
-
-Write-Host "Pulling audit collector image..."
-docker compose @ComposeFiles pull otel-collector-audit
-
-Write-Host "Building audit-enabled checkout..."
-docker compose @ComposeFiles build checkout
-
-if ($env:GITHUB_TOKEN) {
-    Write-Host "GITHUB_TOKEN set — building all services..."
-    docker compose @ComposeFiles up --build -d
-} else {
-    Write-Host "GITHUB_TOKEN not set — pulling prebuilt demo images (checkout built locally)."
-    Write-Host "(ad uses eu.apeirora.opentelemetry from GitHub Packages; set GITHUB_TOKEN to rebuild it.)"
-    docker compose @ComposeFiles pull --ignore-buildable
-    docker compose @ComposeFiles up -d
-}
+Write-Host "Starting audit demo..."
+docker compose @ComposeFiles up -d
 
 Write-Host ""
 Write-Host "Waiting for core services..."
-$deadline = (Get-Date).AddMinutes(3)
+$deadline = (Get-Date).AddMinutes(5)
 $healthy = $false
 while ((Get-Date) -lt $deadline) {
     $collector = docker inspect otel-collector --format "{{.State.Status}}" 2>$null
     $auditCol = docker compose @ComposeFiles ps --format json otel-collector-audit 2>$null | ConvertFrom-Json
+    $checkoutSvc = docker inspect checkout --format "{{.State.Health.Status}}" 2>$null
     $proxy = docker inspect frontend-proxy --format "{{.State.Status}}" 2>$null
-    if ($collector -eq "running" -and $auditCol.State -eq "running" -and $proxy -eq "running") {
+    if ($collector -eq "running" -and $auditCol.State -eq "running" -and $proxy -eq "running" -and $checkoutSvc -eq "healthy") {
         $healthy = $true
         break
     }
@@ -64,17 +54,16 @@ Write-Host ""
 if ($healthy) {
     Write-Host "Audit demo is running." -ForegroundColor Green
 } else {
-    Write-Host "WARNING: Some services may still be starting or unhealthy. Check logs below." -ForegroundColor Yellow
+    Write-Host "WARNING: Some services may still be starting or unhealthy." -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "Useful commands:"
-Write-Host "  docker compose @($ComposeFiles -join ' ') logs -f checkout otel-collector-audit otel-collector"
+Write-Host ("  docker compose " + ($ComposeFiles -join ' ') + " logs -f checkout otel-collector-audit otel-collector")
 Write-Host "  Open http://localhost:8080 and place an order"
 Write-Host "  Enable audit logs: http://localhost:8080/feature/ -> toggle auditLogging to on"
-Write-Host "  Verified audit records appear in otel-collector logs (forwarded via OTLP HTTP)"
 Write-Host ""
-Write-Host "Stop: docker compose @($ComposeFiles -join ' ') down"
+Write-Host ("Stop: docker compose " + ($ComposeFiles -join ' ') + " down")
 
 if (-not $healthy) {
     exit 1

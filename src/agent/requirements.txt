@@ -96,7 +96,7 @@ aiohttp==3.12.15 \
     --hash=sha256:fd736ed420f4db2b8148b52b46b88ed038d0354255f9a73196b7bbce3ea97545 \
     --hash=sha256:fe086edf38b2222328cdf89af0dde2439ee173b8ad7cb659b4e4c6f385b2be3d
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   langchain-community
     #   traceloop-sdk
 aiosignal==1.4.0 \
@@ -494,11 +494,11 @@ exceptiongroup==1.3.1 \
 fastapi==0.120.4 \
     --hash=sha256:2d856bc847893ca4d77896d4504ffdec0fb04312b705065fca9104428eca3868 \
     --hash=sha256:9bdf192308676480d3593e10fd05094e56d6fdc7d9283db26053d8104d5f82a0
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 fastmcp==2.13.3 \
     --hash=sha256:5173d335f4e6aabcfb5a5131af3fa092f604b303130fd3a49226b7a844a48e65 \
     --hash=sha256:ebca59e99412c596dd75ebdd5147800f6abc2490d025af76fa8ea4fc5f68781d
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 filelock==3.29.3 \
     --hash=sha256:7fc1b3f39cf172fd8203812043c57b8a65aef9969f38b6704f628b881f761a84 \
     --hash=sha256:e58333029cc9b925f39aad59b1d8f0a1ad836af4e60d7217f4a4dba87461261d
@@ -728,7 +728,7 @@ greenlet==3.5.2 \
     --hash=sha256:f9ed777c6891d8253e54468576f55e27f8fc1a662a664f946a191003574c0a74 \
     --hash=sha256:feb721811d2754bfd16b48de151dd6b1f222c048e625151f2ca44cfdfd69f59c
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   sqlalchemy
 grpcio==1.81.1 \
     --hash=sha256:0490c30c261eded63f3f354979f9dc4502a9fb944cccb60cd9dc85f5a7349854 \
@@ -824,7 +824,7 @@ httpx==0.28.1 \
     --hash=sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc \
     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   anthropic
     #   fastmcp
     #   huggingface-hub
@@ -1003,7 +1003,7 @@ jsonschema-specifications==2025.9.1 \
 langchain==1.0.5 \
     --hash=sha256:7e0635b36a7f7a649be21fcce4c82b7428bcf72a5d14aacdf9f2636c4775f159 \
     --hash=sha256:d59ce7303f1d9e4bca41855b20a1842f4470a22d09a64fb93fb0ff30a2d36d4b
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 langchain-classic==1.0.8 \
     --hash=sha256:1a11ea7fbe630c4f2af2f3873d27718ceac9488cf32d0821030be7cf039a6213 \
     --hash=sha256:ada0cc341a8a5b80fb24d73bdfaaeb849056ee2d8a41cc468355163fd3667484
@@ -1011,7 +1011,7 @@ langchain-classic==1.0.8 \
 langchain-community==0.4.1 \
     --hash=sha256:2135abb2c7748a35c84613108f7ebf30f8505b18c3c18305ffaecfc7651f6c6a \
     --hash=sha256:f3b211832728ee89f169ddce8579b80a085222ddb4f4ed445a46e977d17b1e85
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 langchain-core==1.4.6 \
     --hash=sha256:84b73716aa9f8b529b426ea256bb71bcb55dea5980212e54c89c9a040fd50230 \
     --hash=sha256:fb8547f83587c8f646f2136b106b732a974ffbff5537799125d16ed4c326eb63
@@ -1028,11 +1028,11 @@ langchain-core==1.4.6 \
 langchain-mcp-adapters==0.1.14 \
     --hash=sha256:36f8131d0b3b5ca28df03440be4dc2a3636e2f73e3e4a0a266d606ffaa12adda \
     --hash=sha256:b900d37d1a82261e408e663b7176a1a74cf0072e17ae9e4241c068093912394a
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 langchain-openai==1.0.1 \
     --hash=sha256:78aff09a631fccca08a64f5fc669b325d0f5821490acce024e5da4cf0a08e0d0 \
     --hash=sha256:9b61309a7268e7c1c614c554cfd66401519e7434aaefc52de7e251887aceb5f7
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 langchain-protocol==0.0.16 \
     --hash=sha256:3658c142c5d0fb3a023a4be442ce4c15c6d626aab6135eb79a76dc64ad19c3c3 \
     --hash=sha256:806c7cdd951b1c4f692fa40fce60821ff0f221d4360e27673ddf2c2b99c2b7ff
@@ -1055,15 +1055,15 @@ langgraph-prebuilt==1.0.5 \
     --hash=sha256:22369563e1848862ace53fbc11b027c28dd04a9ac39314633bb95f2a7e258496 \
     --hash=sha256:85802675ad778cc7240fd02d47db1e0b59c0c86d8369447d77ce47623845db2d
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   langgraph
 langgraph-sdk==0.3.15 \
     --hash=sha256:29e805003d2c6e296823dd71992610976fd0428cefaa8b3304fd91f2247037de \
     --hash=sha256:3838773acf7456d158165385d49f48f1e856f28b56ccd99ea139a8f27004815d
     # via langgraph
-langsmith==0.8.15 \
-    --hash=sha256:72e57c79eef82ddbbe22c5edb8bdf79eb557e65c3a1172ddfa05a724555c8294 \
-    --hash=sha256:9cdf26495814c9ae38998cee7895cdba267b0b3566b598e407c0bb7eefb5aaf9
+langsmith==0.8.18 \
+    --hash=sha256:32dde9c0e67e053e0fb738921fc8ced768af7b8fa83d7a0e3fd63597cf8776dd \
+    --hash=sha256:3940183349993faef48e6c7d08e4822ee9cefd906b362d0e3c2d650314d2f282
     # via
     #   langchain-classic
     #   langchain-community
@@ -1171,7 +1171,7 @@ mcp==1.22.0 \
     --hash=sha256:769b9ac90ed42134375b19e777a2858ca300f95f2e800982b3e2be62dfc0ba01 \
     --hash=sha256:bed758e24df1ed6846989c909ba4e3df339a27b4f30f1b8b627862a4bade4e98
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   fastmcp
     #   langchain-mcp-adapters
 mdurl==0.1.2 \
@@ -1422,7 +1422,7 @@ opentelemetry-api==1.38.0 \
     --hash=sha256:2891b0197f47124454ab9f0cf58f3be33faca394457ac3e09daba13ff50aa582 \
     --hash=sha256:f4c193b5e8acb0912b06ac5b16321908dd0843d75049c091487322284a3eea12
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-instrumentation
@@ -1562,7 +1562,7 @@ opentelemetry-instrumentation-crewai==0.47.5 \
 opentelemetry-instrumentation-fastapi==0.59b0 \
     --hash=sha256:0d8d00ff7d25cca40a4b2356d1d40a8f001e0668f60c102f5aa6bb721d660c4f \
     --hash=sha256:e8fe620cfcca96a7d634003df1bc36a42369dedcdd6893e13fb5903aeeb89b2b
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 opentelemetry-instrumentation-google-generativeai==0.47.5 \
     --hash=sha256:248cf101ebb3bf4a8641e693650276c877274032ca2cee49e69db09c727ac4a8 \
     --hash=sha256:427040a70941ea62f7f4c1c13ec3f8c01aafdce4f850f068f641270a8d0d777e
@@ -1578,7 +1578,7 @@ opentelemetry-instrumentation-haystack==0.47.5 \
 opentelemetry-instrumentation-httpx==0.59b0 \
     --hash=sha256:7dc9f66aef4ca3904d877f459a70c78eafd06131dc64d713b9b1b5a7d0a48f05 \
     --hash=sha256:a1cb9b89d9f05a82701cc9ab9cfa3db54fd76932489449778b350bc1b9f0e872
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 opentelemetry-instrumentation-lancedb==0.47.5 \
     --hash=sha256:900fd153aa631979fee26f7ac1ec47161fec65d6a9ff6f3dd4b1bfa0cafb3f81 \
     --hash=sha256:ce4dc51dec36c5eaa783c83a9c343ae4dffb87066fab7c521c832a0de4d44d8b
@@ -1587,7 +1587,7 @@ opentelemetry-instrumentation-langchain==0.47.5 \
     --hash=sha256:720c5fc0bc0d060a28bea91045feaf8bb459f9d1f4361fea8ae2afdcdcf4dd3c \
     --hash=sha256:c35c76c50555c709cca94744c6c37059303097743af05a793f21a008a7d155bb
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   traceloop-sdk
 opentelemetry-instrumentation-llamaindex==0.47.5 \
     --hash=sha256:150e0d52c1479b530149328c556390970c18794804075937215643a5cab17386 \
@@ -1645,7 +1645,7 @@ opentelemetry-instrumentation-requests==0.59b0 \
     --hash=sha256:9af2ffe3317f03074d7f865919139e89170b6763a0251b68c25e8e64e04b3400 \
     --hash=sha256:d43121532877e31a46c48649279cec2504ee1e0ceb3c87b80fe5ccd7eafc14c1
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   traceloop-sdk
 opentelemetry-instrumentation-sagemaker==0.47.5 \
     --hash=sha256:6ad6649d52a65f3d24d3c6cfe776b819e2f8cdb89944aad145a3cb22c27fc3f5 \
@@ -1698,7 +1698,7 @@ opentelemetry-sdk==1.38.0 \
     --hash=sha256:1c66af6564ecc1553d72d811a01df063ff097cdc82ce188da9951f93b8d10f6b \
     --hash=sha256:93df5d4d871ed09cb4272305be4d996236eedb232253e3ab864c8620f051cebe
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-semantic-conventions-ai
@@ -1707,7 +1707,7 @@ opentelemetry-semantic-conventions==0.59b0 \
     --hash=sha256:35d3b8833ef97d614136e253c1da9342b4c3c083bbaf29ce31d572a1c3825eed \
     --hash=sha256:7a6db3f30d70202d5bf9fa4b69bc866ca6a30437287de6c510fb594878aed6b0
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-alephalpha
     #   opentelemetry-instrumentation-anthropic
@@ -2264,7 +2264,7 @@ python-dotenv==1.2.2 \
     --hash=sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a \
     --hash=sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   fastmcp
     #   pydantic-settings
 python-multipart==0.0.32 \
@@ -2479,7 +2479,7 @@ requests==2.32.5 \
     --hash=sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6 \
     --hash=sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf
     # via
-    #   -r src/agent/requirements.in
+    #   -r requirements.in
     #   langchain-classic
     #   langchain-community
     #   langsmith
@@ -2820,7 +2820,7 @@ tqdm==4.68.2 \
 traceloop-sdk==0.47.5 \
     --hash=sha256:b592d331800b36c104316d17b1352212e3e3dbcfb37589daf2c2f3e90e84ddfe \
     --hash=sha256:e4b0926be5e97e0c6e1f4b8927ef5304a3b76c69631ac8a355b209b8f61d1dd6
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 typer==0.25.1 \
     --hash=sha256:75caa44ed46a03fb2dab8808753ffacdbfea88495e74c85a28c5eefcf5f39c89 \
     --hash=sha256:9616eb8853a09ffeabab1698952f33c6f29ffdbceb4eaeecf571880e8d7664cc
@@ -2990,7 +2990,7 @@ uvicorn==0.49.0 \
 vcrpy==7.0.0 \
     --hash=sha256:176391ad0425edde1680c5b20738ea3dc7fb942520a48d2993448050986b3a50 \
     --hash=sha256:55791e26c18daa363435054d8b35bd41a4ac441b6676167635d1b37a71dbe124
-    # via -r src/agent/requirements.in
+    # via -r requirements.in
 websockets==16.0 \
     --hash=sha256:0298d07ee155e2e9fda5be8a9042200dd2e3bb0b8a38482156576f863a9d457c \
     --hash=sha256:04cdd5d2d1dacbad0a7bf36ccbcd3ccd5a30ee188f2560b7a62a30d14107b31a \

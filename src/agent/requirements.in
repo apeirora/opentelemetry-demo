@@ -17,7 +17,7 @@ opentelemetry-instrumentation-langchain<0.53.0
 opentelemetry-instrumentation-fastapi==0.59b0
 opentelemetry-instrumentation-requests==0.59b0
 opentelemetry-instrumentation-httpx==0.59b0
-vcrpy==7.0.0
+vcrpy==8.2.1
 aiohttp<3.13
 # Pinned explicitly so it's always captured in the hashed lockfile.
 greenlet

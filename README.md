@@ -48,6 +48,35 @@ your preferred deployment method:
 - [Docker](https://opentelemetry.io/docs/demo/docker_deployment/)
 - [Kubernetes](https://opentelemetry.io/docs/demo/kubernetes_deployment/)
 
+### Audit logging demo
+
+An optional audit logging layer is available via `compose.audit.yaml`. It adds a
+standalone audit collector (`otelauditcol`), Redis WAL, and an audit-enabled
+checkout service that emits signed audit records.
+
+```powershell
+.\scripts\run-audit-demo.ps1
+```
+
+Or manually:
+
+```bash
+docker compose -f compose.yaml -f compose.audit.yaml up
+```
+
+With observability backends:
+
+```bash
+docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml up
+```
+
+Toggle audit emission at runtime via the `auditLogging` feature flag at
+http://localhost:8080/feature/. View audit pipeline logs with:
+
+```bash
+docker compose -f compose.yaml -f compose.audit.yaml logs -f checkout otel-collector-audit otel-collector
+```
+
 ## Documentation
 
 For detailed documentation, see [Demo Documentation][docs]. If you're curious

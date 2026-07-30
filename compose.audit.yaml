@@ -57,17 +57,8 @@ services:
       dockerfile: ./src/checkout/Dockerfile.audit
     environment:
       - OTEL_AUDITLOG_ENDPOINT=http://otel-collector-audit:4319/v1/audit
-      - OTEL_AUDITLOG_HMAC_KEY=testapp-dev-hmac-key-change-in-production
     depends_on:
       otel-collector-audit:
         condition: service_started
       audit-redis:
-        condition: service_started
-
-  frontend-proxy:
-    environment:
-      - OPAMP_SERVER_HOST=127.0.0.1
-      - OPAMP_SERVER_UI_PORT=4320
-    depends_on:
-      otel-collector:
         condition: service_started

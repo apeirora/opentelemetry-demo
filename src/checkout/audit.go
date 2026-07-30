@@ -32,6 +32,8 @@ var (
 	auditLogger   auditlog.AuditLogger
 )
 
+// initAuditFromEnv configures the checkout audit SDK when OTEL_AUDITLOG_ENDPOINT is set.
+// It wires OTLP HTTP export to otel-collector-audit and HMAC signing for audit records.
 func initAuditFromEnv() error {
 	endpoint := strings.TrimSpace(os.Getenv("OTEL_AUDITLOG_ENDPOINT"))
 	if endpoint == "" {
@@ -102,6 +104,7 @@ func initAuditFromEnv() error {
 	return nil
 }
 
+// shutdownAudit flushes and shuts down the audit provider on service exit.
 func shutdownAudit(ctx context.Context) {
 	if auditProvider == nil {
 		return
@@ -111,6 +114,7 @@ func shutdownAudit(ctx context.Context) {
 	}
 }
 
+// emitCheckoutAudit emits a signed audit record when the auditLogging feature flag is enabled.
 func emitCheckoutAudit(ctx context.Context, eventName, action, userID, targetID, outcome string, details map[string]any) {
 	if auditLogger == nil {
 		return
@@ -177,6 +181,7 @@ func emitCheckoutAudit(ctx context.Context, eventName, action, userID, targetID,
 	}
 }
 
+// newAuditBaseRecord creates a base log record with unlimited attribute limits for audit payloads.
 func newAuditBaseRecord() auditlog.Record {
 	r := new(sdklog.Record)
 	setSDKRecordField(r, "attributeValueLengthLimit", -1)
@@ -184,6 +189,7 @@ func newAuditBaseRecord() auditlog.Record {
 	return *r
 }
 
+// setSDKRecordField sets unexported sdklog.Record fields via reflection.
 func setSDKRecordField(r *sdklog.Record, name string, value any) {
 	rVal := reflect.ValueOf(r).Elem()
 	rf := rVal.FieldByName(name)

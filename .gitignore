@@ -21,7 +21,6 @@
 .cursorrules
 
 # Build artifacts
-*.exe
 bin/
 obj/
 .gradle/

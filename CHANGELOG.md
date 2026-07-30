@@ -7,6 +7,11 @@ the release.
 
 ## Unreleased
 
+* [audit] Add optional audit logging demo via `compose.audit.yaml`: checkout emits
+  signed audit records through the Go audit SDK, `otel-collector-audit` verifies
+  HMAC signatures with a Redis WAL, and verified logs are forwarded to the main
+  collector. Toggle emission at runtime with the `auditLogging` feature flag.
+
 * [accounting] Run the Kafka consumer as a hosted background service so process
   shutdown can stop the consumer cleanly
   ([#3608](https://github.com/open-telemetry/opentelemetry-demo/pull/3608))

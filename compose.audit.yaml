@@ -16,6 +16,14 @@
 #   docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml up --build
 
 services:
+  load-generator:
+    entrypoint: ["sleep", "infinity"]
+    healthcheck:
+      disable: true
+    environment:
+      - LOCUST_AUTOSTART=false
+      - LOCUST_USERS=0
+
   audit-redis:
     image: redis:7.4-alpine
     restart: unless-stopped

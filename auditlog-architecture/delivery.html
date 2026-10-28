@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit log delivery</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --fg: #1a1a1a;
+      --muted: #5c5c5c;
+      --card: #ffffff;
+      --border: #d4d4d0;
+      --crypto: #f3e8ff;
+      --crypto-border: #7c3aed;
+      --queue: #e0f2fe;
+      --queue-border: #0284c7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 15px/1.4 system-ui, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 20px; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+    .swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      margin-right: 6px;
+      vertical-align: middle;
+      border: 1px solid;
+    }
+    .swatch.crypto { background: var(--crypto); border-color: var(--crypto-border); }
+    .swatch.queue { background: var(--queue); border-color: var(--queue-border); }
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 1100px;
+    }
+    .stage {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stage-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .stage-head strong { font-size: 1rem; }
+    .stage-head span { color: var(--muted); font-size: 0.85rem; }
+    .apps {
+      display: flex;
+      gap: 8px;
+    }
+    .app {
+      flex: 1;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--bg);
+    }
+    .join {
+      text-align: center;
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .step.plain { padding-left: 0; }
+    .step.crypto {
+      background: var(--crypto);
+      border-color: var(--crypto-border);
+    }
+    .step.queue {
+      background: var(--queue);
+      border-color: var(--queue-border);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--fg);
+      color: var(--card);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .step-copy {
+      display: flex;
+      flex-direction: column;
+    }
+    .step-copy small { color: var(--muted); }
+    .arrow {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .arrow .dir { font-size: 1.2rem; color: var(--fg); }
+    .sink {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80px;
+      font-weight: 600;
+    }
+    @media (min-width: 800px) {
+      .flow {
+        flex-direction: row;
+        align-items: stretch;
+      }
+      .stage-node { flex: 1.5; }
+      .stage-main { flex: 1.3; }
+      .stage-sink { flex: 0.6; }
+      .arrow {
+        flex: 0 0 90px;
+        flex-direction: column;
+        gap: 4px;
+        align-self: center;
+      }
+      .arrow .dir { transform: none; }
+    }
+    @media (max-width: 799px) {
+      .arrow .dir { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Audit log delivery</h1>
+  <p class="sub">Sign, persist, verify, sink</p>
+  <div class="legend">
+    <span><span class="swatch crypto"></span>Sign or verify</span>
+    <span><span class="swatch queue"></span>Persistent queue</span>
+  </div>
+  <div class="flow">
+    <section class="stage stage-node" aria-label="Node with apps and otel1 sidecar">
+      <div class="stage-head">
+        <strong>Node</strong>
+        <span>Sidecar on every node</span>
+      </div>
+      <div class="apps">
+        <div class="app">app1</div>
+        <div class="app">app2</div>
+      </div>
+      <div class="join">↓</div>
+      <div class="stage-head">
+        <strong>otel1</strong>
+        <span>Sidecar</span>
+      </div>
+      <div class="steps">
+        <div class="step plain"><span class="badge">1</span><span>OTLP in</span></div>
+        <div class="step crypto"><span class="badge">2</span><span>signingprocessor</span></div>
+        <div class="step queue">
+          <span class="badge">3</span>
+          <span class="step-copy">
+            <span>Persistent queue</span>
+            <small>Replay after crash</small>
+          </span>
+        </div>
+        <div class="step plain"><span class="badge">4</span><span>OTLP to main</span></div>
+      </div>
+    </section>
+
+    <div class="arrow" aria-hidden="true">
+      <span class="dir">→</span>
+      <span>OTLP</span>
+      <span>ACK after disk</span>
+    </div>
+
+    <section class="stage stage-main" aria-label="otel main">
+      <div class="stage-head">
+        <strong>otel main</strong>
+        <span>Central collector</span>
+      </div>
+      <div class="steps">
+        <div class="step plain"><span class="badge">1</span><span>OTLP in</span></div>
+        <div class="step crypto"><span class="badge">2</span><span>verifyprocessor</span></div>
+        <div class="step queue">
+          <span class="badge">3</span>
+          <span class="step-copy">
+            <span>Persistent queue</span>
+            <small>Replay after crash</small>
+          </span>
+        </div>
+        <div class="step plain"><span class="badge">4</span><span>Export</span></div>
+      </div>
+    </section>
+
+    <div class="arrow" aria-hidden="true">
+      <span class="dir">→</span>
+      <span>Export</span>
+      <span>ACK after disk</span>
+    </div>
+
+    <section class="stage stage-sink sink" aria-label="Sink">
+      Sink
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# No-op placeholder loaded by compose.observability.yaml so the config path
+# always exists. compose.audit.yaml bind-mounts the real verify config over
+# this path and swaps in otelcol-audit-main (certificatelogverify).
+
+{}

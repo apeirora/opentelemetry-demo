@@ -1,0 +1,79 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Audit verify overlay for the main collector (compose.audit.yaml).
+# Only signed records (with audit.integrity.value from the sidecar) go through
+# certificatelogverify. Ordinary app logs stay on the default logs pipeline.
+#
+# Verified audit logs go through the failover connector. Priority 1 exports to
+# the proxy listening in the main Grafana network namespace (grafana:9200),
+# which forwards to OpenSearch. Stopping Grafana closes that path. Priority 2
+# exports to OpenSearch standby, which the second Grafana reads.
+# Queues and exporter retries are off so a failed export is returned to the
+# connector instead of being accepted into a local buffer.
+
+processors:
+  filter/drop_signed_audit:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'attributes["audit.integrity.value"] != nil'
+  filter/keep_signed_audit:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'attributes["audit.integrity.value"] == nil'
+  certificatelogverify:
+    mode: sync
+    failure_mode: strict
+    verification_profile: default
+    hmac_key_file: /etc/auditlog/keys/dev_hmac_key.txt
+
+exporters:
+  opensearch/grafana:
+    logs_index: otel-logs
+    logs_index_time_format: "yyyy-MM-dd"
+    timeout: 3s
+    http:
+      endpoint: http://grafana:9200
+      tls:
+        insecure: true
+    retry_on_failure:
+      enabled: false
+    sending_queue:
+      enabled: false
+  opensearch/grafana-standby:
+    logs_index: otel-logs
+    logs_index_time_format: "yyyy-MM-dd"
+    timeout: 3s
+    http:
+      endpoint: http://opensearch-standby:9200
+      tls:
+        insecure: true
+    retry_on_failure:
+      enabled: false
+    sending_queue:
+      enabled: false
+
+connectors:
+  failover/grafana:
+    priority_levels:
+      - [logs/audit/grafana]
+      - [logs/audit/grafana-standby]
+    retry_interval: 15s
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [filter/drop_signed_audit, resourcedetection, memory_limiter, transform/sanitize_logs]
+    logs/audit:
+      receivers: [otlp]
+      processors: [filter/keep_signed_audit, certificatelogverify, resourcedetection, memory_limiter, transform/sanitize_logs]
+      exporters: [debug, failover/grafana]
+    logs/audit/grafana:
+      receivers: [failover/grafana]
+      exporters: [opensearch/grafana]
+    logs/audit/grafana-standby:
+      receivers: [failover/grafana]
+      exporters: [opensearch/grafana-standby]

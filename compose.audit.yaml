@@ -1,18 +1,23 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 #
-# Audit logging layer: Redis WAL, otelauditcol (auditlogreceiver), checkout audit SDK.
+# Audit logging layer (no auditlog SDK in the app):
+#   checkout (raw OTLP POST) -> sidecar (auditlogreceiver + HMAC signing)
+#     -> main otel-collector (certificatelogverify)
+#     -> failover connector -> Grafana, or Grafana standby if that export fails
 #
-# Images are pulled from GitHub Container Registry (see .env). To rebuild checkout locally:
-#   docker compose -f compose.yaml -f compose.audit.yaml build checkout
+# Requires compose.observability.yaml (main Grafana + OpenSearch). The primary
+# audit export is a proxy inside the Grafana network namespace, so stopping
+# the grafana container fails that export.
 #
-# Toggle audit emission at runtime via the auditLogging feature flag (flagd / http://localhost:8080/feature/).
+# Rebuild:
+#   docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml build checkout otel-collector-audit-sidecar otel-collector
+#
+# Toggle emission: http://localhost:8080/feature/ -> auditLogging
+# Standby Grafana: http://localhost:3001/grafana/
 #
 # Usage:
 #   .\scripts\run-audit-demo.ps1
-#   docker compose -f compose.yaml -f compose.audit.yaml up --build
-#
-# With observability UIs:
 #   docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml up --build
 
 services:
@@ -35,17 +40,61 @@ services:
         max-size: "5m"
         max-file: "2"
 
-  otel-collector-audit:
-    image: ${OTEL_AUDIT_COLLECTOR_IMAGE}
-    pull_policy: always
+  otel-collector:
+    image: ${OTEL_AUDIT_MAIN_IMAGE:-otelcol-audit-main:local}
+    pull_policy: build
+    build:
+      context: ./
+      dockerfile: ./src/otel-collector/Dockerfile.audit-main
+      args:
+        OTELCOL_VERIFY_REF: ${OTELCOL_VERIFY_REF:-feat/certificatelogverifyprocessor}
+        OTELCOL_REPO: ${OTELCOL_REPO:-https://github.com/apeirora/opentelemetry-collector-contrib.git}
+    # Listed last when combined with compose.observability.yaml so this command
+    # keeps observability exporters and enables certificatelogverify.
+    command:
+      - --config=/etc/otelcol-config.yml
+      - --config=/etc/otelcol-config-full.yml
+      - --config=/etc/otelcol-config-observability.yml
+      - --config=/etc/otelcol-config-audit-verify.yml
+      - --config=/etc/otelcol-config-extras.yml
+      - --feature-gates=service.profilesSupport
+    volumes:
+      - ${HOST_FILESYSTEM}:/hostfs:ro
+      - ${DOCKER_SOCK}:/var/run/docker.sock:ro
+      - ${OTEL_COLLECTOR_CONFIG}:/etc/otelcol-config.yml
+      - ${OTEL_COLLECTOR_CONFIG_FULL}:/etc/otelcol-config-full.yml
+      - ${OTEL_COLLECTOR_CONFIG_OBSERVABILITY}:/etc/otelcol-config-observability.yml
+      - ./src/otel-collector/otelcol-config-audit-verify.yml:/etc/otelcol-config-audit-verify.yml:ro
+      - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-config-extras.yml
+      - ./src/auditlog/keys:/etc/auditlog/keys:ro
+    depends_on:
+      grafana-primary-proxy:
+        condition: service_healthy
+      opensearch-standby:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+
+
+  otel-collector-audit-sidecar:
+    image: ${OTEL_AUDIT_SIDECAR_IMAGE:-otelauditsidecar:local}
+    pull_policy: build
+    build:
+      context: ./
+      dockerfile: ./src/otel-collector/Dockerfile.audit-sidecar
+      args:
+        OTELCOL_AUDIT_REF: ${OTELCOL_AUDIT_REF:-feat/otelauditcol}
+        OTELCOL_REPO: ${OTELCOL_REPO:-https://github.com/apeirora/opentelemetry-collector-contrib.git}
     restart: unless-stopped
     command:
-      - --config=/etc/otelcol-config-audit-collector.yml
+      - --config=/etc/otelcol-config-audit-sidecar.yml
     volumes:
-      - ./src/otel-collector/otelcol-config-audit-collector.yml:/etc/otelcol-config-audit-collector.yml:ro
+      - ./src/otel-collector/otelcol-config-audit-sidecar.yml:/etc/otelcol-config-audit-sidecar.yml:ro
       - ./src/auditlog/keys:/etc/auditlog/keys:ro
     ports:
-      - "${OTEL_AUDITLOG_PORT:-4319}:4319"
+      - "${OTEL_AUDITLOG_SIDECAR_PORT:-4320}:4320"
     depends_on:
       audit-redis:
         condition: service_started
@@ -58,15 +107,117 @@ services:
         max-file: "2"
 
   checkout:
-    image: ${CHECKOUT_AUDIT_IMAGE}
-    pull_policy: always
+    image: ${CHECKOUT_AUDIT_IMAGE:-checkout-audit:local}
+    pull_policy: build
     build:
       context: ./
       dockerfile: ./src/checkout/Dockerfile.audit
     environment:
-      - OTEL_AUDITLOG_ENDPOINT=http://otel-collector-audit:4319/v1/audit
+      - OTEL_AUDITLOG_ENDPOINT=http://otel-collector-audit-sidecar:4320/v1/audit
     depends_on:
-      otel-collector-audit:
+      otel-collector-audit-sidecar:
         condition: service_started
       audit-redis:
         condition: service_started
+
+  # Shares the main Grafana network namespace and listens on :9200 there.
+  # The collector exports verified audit logs to grafana:9200. Stopping the
+  # grafana container removes that address, and the failover connector switches
+  # to OpenSearch standby. After starting Grafana again, restart this proxy so
+  # it attaches to the new network namespace.
+  grafana-primary-proxy:
+    image: nginx:1.27-alpine
+    container_name: grafana-primary-proxy
+    network_mode: service:grafana
+    restart: unless-stopped
+    depends_on:
+      grafana:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - ./src/auditlog/grafana-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9200/"]
+      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  opensearch-standby:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-opensearch
+    container_name: opensearch-standby
+    build:
+      context: ./
+      dockerfile: ${OPENSEARCH_DOCKERFILE}
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-opensearch
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
+    environment:
+      - cluster.name=demo-standby-cluster
+      - node.name=standby-node
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms400m -Xmx400m
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - indices.query.bool.max_clause_count=10000
+      - _JAVA_OPTIONS
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "${OPENSEARCH_STANDBY_PORT}:9200"
+    healthcheck:
+      test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
+      start_period: 10s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  grafana-standby:
+    image: ${GRAFANA_IMAGE}
+    container_name: grafana-standby
+    deploy:
+      resources:
+        limits:
+          memory: 175M
+    restart: unless-stopped
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-opensearch-datasource
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_ROOT_URL=http://localhost:${GRAFANA_STANDBY_PORT}/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./src/grafana/provisioning/dashboards/:/etc/grafana/provisioning/dashboards/
+      - ./src/grafana/provisioning/alerting/:/etc/grafana/provisioning/alerting/
+      - ./src/grafana-standby/provisioning/datasources/:/etc/grafana/provisioning/datasources/
+    ports:
+      - "${GRAFANA_STANDBY_PORT}:3000"
+    depends_on:
+      opensearch-standby:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"

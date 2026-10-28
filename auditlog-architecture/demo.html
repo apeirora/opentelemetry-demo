@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit log delivery — Astronomy Shop demo</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --fg: #1a1a1a;
+      --muted: #5c5c5c;
+      --card: #ffffff;
+      --border: #d4d4d0;
+      --crypto: #f3e8ff;
+      --crypto-border: #7c3aed;
+      --queue: #e0f2fe;
+      --queue-border: #0284c7;
+      --recv: #ffedd5;
+      --recv-border: #c2410c;
+      --fail: #dcfce7;
+      --fail-border: #15803d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 15px/1.4 system-ui, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 8px; }
+    .back { margin: 0 0 20px; font-size: 0.9rem; }
+    .back a { color: var(--fg); }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+    .swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      margin-right: 6px;
+      vertical-align: middle;
+      border: 1px solid;
+    }
+    .swatch.recv { background: var(--recv); border-color: var(--recv-border); }
+    .swatch.crypto { background: var(--crypto); border-color: var(--crypto-border); }
+    .swatch.queue { background: var(--queue); border-color: var(--queue-border); }
+    .swatch.fail { background: var(--fail); border-color: var(--fail-border); }
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 1280px;
+    }
+    .stage {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stage-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .stage-head strong { font-size: 1rem; }
+    .stage-head span { color: var(--muted); font-size: 0.85rem; }
+    .app {
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--bg);
+    }
+    .app small, .sink small { display: block; color: var(--muted); font-weight: 400; margin-top: 4px; }
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .step.plain { padding-left: 0; }
+    .step.recv {
+      background: var(--recv);
+      border-color: var(--recv-border);
+    }
+    .step.crypto {
+      background: var(--crypto);
+      border-color: var(--crypto-border);
+    }
+    .step.queue {
+      background: var(--queue);
+      border-color: var(--queue-border);
+    }
+    .step.fail {
+      background: var(--fail);
+      border-color: var(--fail-border);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--fg);
+      color: var(--card);
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex: 0 0 auto;
+    }
+    .step-copy {
+      display: flex;
+      flex-direction: column;
+    }
+    .step-copy small { color: var(--muted); }
+    .arrow {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .arrow .dir { font-size: 1.2rem; color: var(--fg); }
+    .split {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .branch {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .branch .label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .sink {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .notes {
+      max-width: 1280px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .notes code {
+      font-size: 0.85em;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0 4px;
+    }
+    @media (min-width: 980px) {
+      .flow {
+        flex-direction: row;
+        align-items: stretch;
+      }
+      .stage-app { flex: 0.8; }
+      .stage-side { flex: 1.35; }
+      .stage-main { flex: 1.35; }
+      .stage-sink { flex: 1.15; }
+      .arrow {
+        flex: 0 0 88px;
+        flex-direction: column;
+        gap: 4px;
+        align-self: center;
+      }
+      .split { flex-direction: row; }
+      .branch { flex: 1; }
+    }
+    @media (max-width: 979px) {
+      .arrow .dir { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Audit log delivery — Astronomy Shop demo</h1>
+  <p class="sub">Apeirora <code>auditlogreceiver</code> signs on the sidecar. Main verifies, then the failover connector sends logs to Grafana or to the standby Grafana.</p>
+  <p class="back"><a href="delivery.html">Generic delivery schematic</a></p>
+  <div class="legend">
+    <span><span class="swatch recv"></span>auditlogreceiver</span>
+    <span><span class="swatch crypto"></span>Sign or verify</span>
+    <span><span class="swatch queue"></span>Persistence memory</span>
+    <span><span class="swatch fail"></span>Failover standby</span>
+  </div>
+  <div class="flow">
+    <section class="stage stage-app" aria-label="checkout">
+      <div class="stage-head">
+        <strong>checkout</strong>
+        <span>No auditlog SDK</span>
+      </div>
+      <div class="app">
+        Unsigned OTLP JSON
+        <small>auditLogging flag gates the POST</small>
+      </div>
+    </section>
+
+    <div class="arrow" aria-hidden="true">
+      <span class="dir">→</span>
+      <span>POST /v1/audit</span>
+      <span>port 4320</span>
+    </div>
+
+    <section class="stage stage-side" aria-label="audit sidecar">
+      <div class="stage-head">
+        <strong>otel-collector-audit-sidecar</strong>
+        <span>apeirora feat/otelauditcol</span>
+      </div>
+      <div class="steps">
+        <div class="step recv">
+          <span class="badge">1</span>
+          <span class="step-copy">
+            <span>auditlogreceiver</span>
+            <small>:4320 /v1/audit · response_mode sync</small>
+          </span>
+        </div>
+        <div class="step queue">
+          <span class="badge">2</span>
+          <span class="step-copy">
+            <span>Persistence memory</span>
+            <small>in-memory buffer · circuit open accepts and keeps</small>
+          </span>
+        </div>
+        <div class="step crypto">
+          <span class="badge">3</span>
+          <span class="step-copy">
+            <span>signingprocessor</span>
+            <small>HMAC-SHA256 · dev_hmac_key.txt</small>
+          </span>
+        </div>
+        <div class="step plain">
+          <span class="badge">4</span>
+          <span class="step-copy">
+            <span>otlphttp to main</span>
+            <small>retry on · sending_queue off</small>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <div class="arrow" aria-hidden="true">
+      <span class="dir">→</span>
+      <span>OTLP HTTP</span>
+      <span>:4318 signed</span>
+    </div>
+
+    <section class="stage stage-main" aria-label="main collector">
+      <div class="stage-head">
+        <strong>otel-collector</strong>
+        <span>apeirora certificatelogverify</span>
+      </div>
+      <div class="step plain"><span class="badge">1</span><span>OTLP in :4318</span></div>
+      <div class="split">
+        <div class="branch">
+          <div class="label">logs</div>
+          <div class="step plain">
+            <span class="badge">2</span>
+            <span class="step-copy">
+              <span>drop signed audit</span>
+              <small>ordinary app logs</small>
+            </span>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="label">logs/audit</div>
+          <div class="step plain">
+            <span class="badge">2</span>
+            <span class="step-copy">
+              <span>keep signed audit</span>
+              <small>audit.integrity.value set</small>
+            </span>
+          </div>
+          <div class="step crypto">
+            <span class="badge">3</span>
+            <span class="step-copy">
+              <span>certificatelogverify</span>
+              <small>sync · strict · same HMAC key</small>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="arrow" aria-hidden="true">
+      <span class="dir">→</span>
+      <span>verified audit logs</span>
+    </div>
+
+    <section class="stage stage-sink" aria-label="Grafana failover">
+      <div class="stage-head">
+        <strong>failover connector</strong>
+        <span>retries Grafana every 15s</span>
+      </div>
+      <div class="steps">
+        <div class="step plain">
+          <span class="badge">1</span>
+          <span class="step-copy">
+            <span>Grafana</span>
+            <small>localhost:8080/grafana · export to grafana:9200</small>
+          </span>
+        </div>
+        <div class="step fail">
+          <span class="badge">2</span>
+          <span class="step-copy">
+            <span>Grafana standby</span>
+            <small>localhost:3001/grafana · OpenSearch standby when Grafana is down</small>
+          </span>
+        </div>
+      </div>
+    </section>
+  </div>
+  <p class="notes">
+    The receiver keeps unsent records in memory, plus a circuit breaker
+    (<code>open_behavior: accept</code> after 3 failures, 30s open).
+    A restart drops that buffer. The sidecar exporter has <code>sending_queue</code> off.
+    Verified audit logs use <code>failover/grafana</code>. The primary exporter posts to a proxy
+    inside the Grafana network namespace, so <code>docker stop grafana</code> fails that export
+    and the same batch is written to OpenSearch standby. Other app logs stay on the direct
+    OpenSearch exporter. After <code>docker start grafana</code>, run
+    <code>docker restart grafana-primary-proxy</code>.
+  </p>
+</body>
+</html>

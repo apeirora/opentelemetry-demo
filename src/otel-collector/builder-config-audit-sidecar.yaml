@@ -1,0 +1,34 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# OCB config for the audit sidecar: receive /v1/audit, HMAC-sign, forward to main collector.
+# Built by src/otel-collector/Dockerfile.audit-sidecar from apeirora collector-contrib forks.
+
+dist:
+  module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelauditsidecar
+  name: otelauditsidecar
+  description: Sidecar collector — auditlogreceiver + signingprocessor
+  version: 0.151.0-dev
+  output_path: ./cmd/otelauditsidecar
+
+extensions:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension v0.151.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.151.1-0.20260501001745-24aecacf1c04
+
+processors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor v0.151.0
+
+receivers:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/auditlogreceiver v0.151.0
+
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.57.1-0.20260501001745-24aecacf1c04
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.57.1-0.20260501001745-24aecacf1c04
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.57.1-0.20260501001745-24aecacf1c04
+
+replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/auditlogreceiver => ../../receiver/auditlogreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor => ../../processor/signingprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension => ../../extension/storage/redisstorageextension

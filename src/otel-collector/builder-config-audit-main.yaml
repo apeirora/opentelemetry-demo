@@ -1,0 +1,48 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# OCB config for the audit-aware main collector: stock demo components +
+# certificatelogverify (apeirora PR #63 / feat/certificatelogverifyprocessor).
+
+dist:
+  module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcol-audit-main
+  name: otelcol-audit-main
+  description: Demo collector with certificatelogverify for Tier-2 audit checks
+  version: 0.160.0-dev
+  output_path: ./cmd/otelcol-audit-main
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.160.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.160.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.160.0
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/certificatelogverifyprocessor v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.160.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.160.0
+
+connectors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.160.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.160.0
+
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.66.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.66.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.66.0
+
+replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/certificatelogverifyprocessor => ../../processor/certificatelogverifyprocessor

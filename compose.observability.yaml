@@ -153,12 +153,14 @@ services:
       - "--config=/etc/otelcol-config.yml"
       - "--config=/etc/otelcol-config-full.yml"
       - "--config=/etc/otelcol-config-observability.yml"
+      - "--config=/etc/otelcol-config-audit-verify.yml"
       - "--config=/etc/otelcol-config-extras.yml"
       - "--feature-gates=service.profilesSupport"
     volumes:
       - ${OTEL_COLLECTOR_CONFIG}:/etc/otelcol-config.yml
       - ${OTEL_COLLECTOR_CONFIG_FULL}:/etc/otelcol-config-full.yml
       - ${OTEL_COLLECTOR_CONFIG_OBSERVABILITY}:/etc/otelcol-config-observability.yml
+      - ./src/otel-collector/otelcol-config-audit-verify-stub.yml:/etc/otelcol-config-audit-verify.yml:ro
       - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-config-extras.yml
     environment:
       - KAFKA_ADDR

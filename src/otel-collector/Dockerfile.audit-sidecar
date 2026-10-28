@@ -1,0 +1,41 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Builds otelauditsidecar: auditlogreceiver + signingprocessor (HMAC).
+# auditlogreceiver comes from apeirora/opentelemetry-collector-contrib feat/otelauditcol.
+# signingprocessor is the local copy in src/otel-collector/signingprocessor, aligned
+# with certificatelogverify's canonical payload and base64 HMAC key.
+#
+#   docker build -f src/otel-collector/Dockerfile.audit-sidecar -t otelauditsidecar:local .
+
+FROM docker.io/library/golang:1.25-bookworm AS builder
+
+ARG OTELCOL_AUDIT_REF=feat/otelauditcol
+ARG OTELCOL_REPO=https://github.com/apeirora/opentelemetry-collector-contrib.git
+
+ENV GOTOOLCHAIN=auto
+
+WORKDIR /src
+
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch "${OTELCOL_AUDIT_REF}" "${OTELCOL_REPO}" contrib \
+    && rm -rf contrib/processor/signingprocessor
+
+WORKDIR /src/contrib
+
+COPY src/otel-collector/signingprocessor processor/signingprocessor
+COPY src/otel-collector/builder-config-audit-sidecar.yaml cmd/otelauditsidecar/builder-config.yaml
+
+RUN GOBIN=/go/bin go install go.opentelemetry.io/collector/cmd/builder@v0.151.0 \
+    && mkdir -p cmd/otelauditsidecar \
+    && /go/bin/builder --config cmd/otelauditsidecar/builder-config.yaml
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:d093aa3e30dbadd3efe1310db061a14da60299baff8450a17fe0ccc514a16639
+
+COPY --from=builder /src/contrib/cmd/otelauditsidecar/otelauditsidecar /otelauditsidecar
+
+EXPOSE 4320
+ENTRYPOINT ["/otelauditsidecar"]
+CMD ["--config", "/etc/otelcol-config-audit-sidecar.yml"]

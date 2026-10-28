@@ -1,0 +1,38 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Builds otelcol-audit-main: demo collector components + certificatelogverify.
+# Source: apeirora/opentelemetry-collector-contrib @ feat/certificatelogverifyprocessor
+# (https://github.com/apeirora/opentelemetry-collector-contrib/pull/63)
+#
+#   docker build -f src/otel-collector/Dockerfile.audit-main -t otelcol-audit-main:local .
+
+FROM docker.io/library/golang:1.25-bookworm AS builder
+
+ARG OTELCOL_VERIFY_REF=feat/certificatelogverifyprocessor
+ARG OTELCOL_REPO=https://github.com/apeirora/opentelemetry-collector-contrib.git
+ARG OCB_VERSION=v0.160.0
+
+ENV GOTOOLCHAIN=auto
+
+WORKDIR /src
+
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch "${OTELCOL_VERIFY_REF}" "${OTELCOL_REPO}" contrib
+
+WORKDIR /src/contrib
+
+COPY src/otel-collector/builder-config-audit-main.yaml cmd/otelcol-audit-main/builder-config.yaml
+
+RUN GOBIN=/go/bin go install go.opentelemetry.io/collector/cmd/builder@${OCB_VERSION} \
+    && mkdir -p cmd/otelcol-audit-main \
+    && /go/bin/builder --config cmd/otelcol-audit-main/builder-config.yaml
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:d093aa3e30dbadd3efe1310db061a14da60299baff8450a17fe0ccc514a16639
+
+COPY --from=builder /src/contrib/cmd/otelcol-audit-main/otelcol-audit-main /otelcol-audit-main
+
+EXPOSE 4317 4318
+ENTRYPOINT ["/otelcol-audit-main"]

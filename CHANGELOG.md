@@ -7,10 +7,26 @@ the release.
 
 ## Unreleased
 
-* [audit] Add optional audit logging demo via `compose.audit.yaml`: checkout emits
-  signed audit records through the Go audit SDK, `otel-collector-audit` verifies
-  HMAC signatures with a Redis WAL, and verified logs are forwarded to the main
-  collector. Toggle emission at runtime with the `auditLogging` feature flag.
+* [audit] Fail over verified audit logs with the collector failover connector
+  when the main Grafana export is down. A second Grafana reads OpenSearch
+  standby.
+
+* [audit] Main collector verifies sidecar-signed audit logs with
+  `certificatelogverify` (apeirora PR #63). Builds `otelcol-audit-main` and
+  loads `otelcol-config-audit-verify.yml` (`failure_mode: mark`). HMAC key file
+  is standard base64 for signing + verify.
+
+* [audit] Switch audit demo to **no auditlog SDK**: checkout POSTs raw OTLP to
+  the sidecar `/v1/audit`; the sidecar HMAC-signs with `signingprocessor` and
+  forwards to the main `otel-collector` (Grafana/OpenSearch). Removes the
+  central verify collector hop and the apeirora Go audit SDK build.
+
+* [audit] Add checkout sidecar audit collector with Redis WAL and
+  `open_behavior: accept` so records are retained when the downstream
+  collector is unreachable, then replayed on recovery.
+
+* [audit] Add optional audit logging demo via `compose.audit.yaml`. Toggle
+  emission at runtime with the `auditLogging` feature flag.
 
 * [accounting] Run the Kafka consumer as a hosted background service so process
   shutdown can stop the consumer cleanly

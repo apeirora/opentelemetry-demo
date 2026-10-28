@@ -50,32 +50,44 @@ your preferred deployment method:
 
 ### Audit logging demo
 
-An optional audit logging layer is available via `compose.audit.yaml`. It adds a
-standalone audit collector (`otelauditcol`), Redis WAL, and an audit-enabled
-checkout service that emits signed audit records.
+An optional audit logging layer is available via `compose.audit.yaml`. It adds:
+
+- checkout that emits **unsigned** audit records as raw OTLP HTTP (no auditlog SDK)
+- a **sidecar** collector (`auditlogreceiver` + `signingprocessor` HMAC) with Redis WAL
+- a **main** collector build with [`certificatelogverify`](https://github.com/apeirora/opentelemetry-collector-contrib/pull/63) to check integrity
+- forwarding of verified audit logs through the collector failover connector to Grafana, and to a second Grafana when that export fails
+
+Pipeline: `checkout (raw OTLP) → sidecar (sign) → otel-collector (verify) → failover → Grafana`, or Grafana standby at http://localhost:3001/grafana/ when the main Grafana export is down.
 
 ```powershell
 .\scripts\run-audit-demo.ps1
 ```
 
-Or manually:
+Or manually (list `compose.audit.yaml` last so verify and failover stay enabled):
 
 ```bash
-docker compose -f compose.yaml -f compose.audit.yaml up
-```
-
-With observability backends:
-
-```bash
-docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml up
+docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml up --build
 ```
 
 Toggle audit emission at runtime via the `auditLogging` feature flag at
-http://localhost:8080/feature/. View audit pipeline logs with:
+http://localhost:8080/feature/. View pipeline logs with:
 
 ```bash
-docker compose -f compose.yaml -f compose.audit.yaml logs -f checkout otel-collector-audit otel-collector
+docker compose -f compose.yaml -f compose.observability.yaml -f compose.audit.yaml logs -f checkout otel-collector-audit-sidecar otel-collector
 ```
+
+In Grafana Explore (OpenSearch), query: `attributes.verify_status:passed` or
+`_exists_:attributes.audit.action`. The same query on the standby Grafana
+(http://localhost:3001/grafana/) shows batches exported while the main Grafana was stopped.
+
+```bash
+docker stop grafana
+docker start grafana
+docker restart grafana-primary-proxy
+```
+
+HMAC key material is base64 in `src/auditlog/keys/dev_hmac_key.txt` (shared by
+sidecar signing and main verify).
 
 ## Documentation
 
